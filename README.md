@@ -40,3 +40,9 @@ The UI has been fully rewritten from **React + Redux** to **Svelte 5** using Vit
   - UI rewritten in **Svelte 5** with Vite
   - Adjusted architecture and integration
   - Modified UI/UX flow and functionality
+
+
+## 📸 Preview
+
+![Mainscreen](preview/mainscreen.png)
+![Playlist](preview/playlist.png)
