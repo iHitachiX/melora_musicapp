@@ -4,7 +4,7 @@ Config = {}
 Config.AppName = "Melora"
 
 -- Locale settings ('en' or 'de')
-Config.Locale = 'en'
+Config.Locale = 'de'
 
 -- Music range settings
 Config.MUSIC_RANGE = 50.0 -- Maximum distance to hear music (meters)

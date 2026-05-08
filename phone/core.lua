@@ -21,3 +21,10 @@ RegisterNUICallback('Core:NuiLoaded', function(data, cb)
     Core.NuiLoaded = true
     cb({})
 end)
+
+-- Gibt die komplette Locale-Table für die angeforderte Sprache zurück
+RegisterNUICallback('Core:GetLanguage', function(data, cb)
+    local lang = (data and data.lang) or Config.Locale or 'en'
+    local strings = Locales[lang] or Locales['en'] or {}
+    cb(strings)
+end)

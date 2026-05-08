@@ -4,7 +4,7 @@ lua54 "yes"
 
 author "iHitachi"
 description "Play YouTube videos through 17mov_Phone"
-version "2.0.0"
+version "2.1.0"
 
 shared_scripts {
     "config.lua",
@@ -20,8 +20,9 @@ client_scripts {
     "phone/main.lua",
 }
 
-server_script "server.lua"
+server_script "server/main.lua"
 
+-- Dev: ui_page "http://localhost:1717"
 ui_page "web/build/index.html"
 
 files {

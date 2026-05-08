@@ -2,7 +2,7 @@
 
 A custom music app for **17mov_Phone**, designed for playing properly licensed, royalty-free music inside your FiveM server.
 
-This version is a rewritten and adapted implementation based on the  **lb-phone music app** from **albertheprince**
+This version is a rewritten and adapted implementation based on the **lb-phone music app** from **albertheprince**
 
 ---
 
@@ -22,6 +22,14 @@ This version is a rewritten and adapted implementation based on the  **lb-phone 
 
 ---
 
+## 🛠️ Tech Stack
+
+The UI has been fully rewritten from **React + Redux** to **Svelte 5** using Vite.
+
+**Bundle size:** ~20kb instead of ~70kb
+
+---
+
 ## 📜 Credits
 
 - Original concept and implementation:  
@@ -29,7 +37,6 @@ This version is a rewritten and adapted implementation based on the  **lb-phone 
 
 - This version:
   - Fully rewritten and adapted for **17mov_Phone**
+  - UI rewritten in **Svelte 5** with Vite
   - Adjusted architecture and integration
   - Modified UI/UX flow and functionality
-
----

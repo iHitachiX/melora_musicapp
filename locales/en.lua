@@ -5,7 +5,7 @@ Locales['en'] = {
 
     -- Player view
     no_song_playing = "No song playing",
-    now_playing = "Now Playing",
+    now_playing = "Now playing",
     paused = "Paused",
     enter_url_to_start = "Enter a URL to start",
     youtube_url = "YouTube URL",
@@ -17,7 +17,7 @@ Locales['en'] = {
 
     -- Playlist view
     songs = "Songs",
-    now_playing_bar = "Now Playing",
+    now_playing_bar = "Now playing",
     playlist_empty = "Your playlist is empty",
     add_song = "Add Song",
     click_to_play = "Click to play",
