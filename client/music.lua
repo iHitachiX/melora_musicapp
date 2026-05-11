@@ -25,6 +25,11 @@ loadPlaylist()
 
 -- NUI Callbacks
 RegisterNUICallback("playSound", function(data, cb)
+    local hasPhone = exports["17mov_Phone"]:HasPhoneItem()
+    if not hasPhone then
+        cb({})
+        return
+    end
     local coords = GetEntityCoords(PlayerPedId())
     meloraUrl = data.url
     playing = true
@@ -95,6 +100,11 @@ RegisterNUICallback("removeFromPlaylist", function(data, cb)
 end)
 
 RegisterNUICallback("playFromPlaylist", function(data, cb)
+    local hasPhone = exports["17mov_Phone"]:HasPhoneItem()
+    if not hasPhone then
+        cb({})
+        return
+    end
     if playlist[data.index] then
         currentPlaylistIndex = data.index
         local song = playlist[data.index]
@@ -497,5 +507,51 @@ CreateThread(function()
                 end
             end
         end
+    end
+end)
+
+
+CreateThread(function()
+    while true do
+        Wait(2000)
+
+        if not playing then
+            goto continue
+        end
+
+        local hasPhone = exports["17mov_Phone"]:HasPhoneItem()
+
+        if not hasPhone then
+            playing = false
+            isPaused = false
+            currentPlaylistIndex = 0
+
+            TriggerServerEvent("phone:melora:soundStatus", "stop", {})
+
+            Core.SendNuiMessage("forceStop", {})
+        end
+
+        ::continue::
+    end
+end)
+
+
+AddEventHandler('onResourceStop', function(resourceName)
+    if resourceName ~= GetCurrentResourceName() then
+        return
+    end
+
+    if playing then
+        TriggerServerEvent("phone:melora:soundStatus", "stop", {})
+
+        if xSound:soundExists(myMusicId) then
+            xSound:Destroy(myMusicId)
+        end
+
+        Core.SendNuiMessage("forceStop", {})
+
+        playing = false
+        isPaused = false
+        currentPlaylistIndex = 0
     end
 end)
