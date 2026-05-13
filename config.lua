@@ -26,3 +26,11 @@ Config.UPDATE_TIERS = {
 -- Other settings
 Config.MIN_DISTANCE_THRESHOLD = 2.0 -- Minimum distance (meters) before sending position update
 Config.TIER_STICKY_TIME = 3000 -- Time (ms) to maintain higher tier after speed drops
+
+-- YouTube API
+-- Key in server.cfg setzen: set YOUTUBE_API_KEY "dein_key"
+Config.YouTube = {
+    apiKey           = GetConvar('YOUTUBE_API_KEY_MUSICAPP', ''),  -- set YOUTUBE_API_KEY_MUSICAPP "dein_key" in server.cfg
+    maxSearchResults = 10,
+    maxPlaylistImport = 200,
+}

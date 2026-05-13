@@ -8,28 +8,11 @@ local playlist = {}
 local currentPlaylistIndex = 0
 local isPaused = false
 
-local function loadPlaylist()
-    local savedPlaylist = GetResourceKvpString("melora_playlist")
-    if savedPlaylist then
-        playlist = json.decode(savedPlaylist) or {}
-    else
-        playlist = {}
-    end
-end
-
-local function savePlaylist()
-    SetResourceKvp("melora_playlist", json.encode(playlist))
-end
-
-loadPlaylist()
+-- Playlist wird server-seitig in MySQL gespeichert.
+-- Beim Start via getData geladen.
 
 -- NUI Callbacks
 RegisterNUICallback("playSound", function(data, cb)
-    local hasPhone = exports["17mov_Phone"]:HasPhoneItem()
-    if not hasPhone then
-        cb({})
-        return
-    end
     local coords = GetEntityCoords(PlayerPedId())
     meloraUrl = data.url
     playing = true
@@ -74,6 +57,9 @@ RegisterNUICallback("changeVolume", function(data, cb)
 end)
 
 RegisterNUICallback("getData", function(_, cb)
+    -- Playlist frisch aus DB laden
+    local dbPlaylist = lib.callback.await('melora_musicapp:server:getPlaylist', false)
+    if dbPlaylist then playlist = dbPlaylist end
     cb({
         isPlay = playing,
         volume = volume,
@@ -84,27 +70,31 @@ RegisterNUICallback("getData", function(_, cb)
 end)
 
 RegisterNUICallback("addToPlaylist", function(data, cb)
-    table.insert(playlist, {
-        url = data.url,
-        title = data.title,
-        thumbnail = data.thumbnail
+    -- Server speichert in DB, Client bekommt aktualisierte Playlist zurück
+    local result = lib.callback.await('melora_musicapp:server:addToPlaylist', false, {
+        url       = data.url,
+        title     = data.title,
+        thumbnail = data.thumbnail or '',
     })
-    savePlaylist()
-    cb({ success = true, playlist = playlist })
+    if result then
+        playlist = result
+        cb({ success = true, playlist = playlist })
+    else
+        cb({ success = false })
+    end
 end)
 
 RegisterNUICallback("removeFromPlaylist", function(data, cb)
-    table.remove(playlist, data.index)
-    savePlaylist()
-    cb({ success = true, playlist = playlist })
+    local result = lib.callback.await('melora_musicapp:server:removeFromPlaylist', false, data.index)
+    if result then
+        playlist = result
+        cb({ success = true, playlist = playlist })
+    else
+        cb({ success = false })
+    end
 end)
 
 RegisterNUICallback("playFromPlaylist", function(data, cb)
-    local hasPhone = exports["17mov_Phone"]:HasPhoneItem()
-    if not hasPhone then
-        cb({})
-        return
-    end
     if playlist[data.index] then
         currentPlaylistIndex = data.index
         local song = playlist[data.index]
@@ -141,6 +131,8 @@ RegisterNUICallback("playFromPlaylist", function(data, cb)
 end)
 
 RegisterNUICallback("getPlaylist", function(_, cb)
+    local dbPlaylist = lib.callback.await('melora_musicapp:server:getPlaylist', false)
+    if dbPlaylist then playlist = dbPlaylist end
     cb({ playlist = playlist })
 end)
 
@@ -231,9 +223,9 @@ CreateThread(function()
     Wait(1000)
     while true do
         if playing then
-            local ped = PlayerPedId()
+            local ped    = PlayerPedId()
             local coords = GetEntityCoords(ped)
-            local speed = getSpeed(ped)
+            local speed  = getSpeed(ped)
             local currentTime = GetGameTimer()
             local selectedWait = 1000
             local selectedTier = 0
@@ -261,7 +253,7 @@ CreateThread(function()
             end
 
             local distanceMoved = #(coords - lastPosition)
-            local shouldUpdate = false
+            local shouldUpdate  = false
 
             if selectedTier >= 3 then
                 shouldUpdate = true
@@ -272,9 +264,17 @@ CreateThread(function()
             end
 
             if shouldUpdate then
-                TriggerServerEvent("phone:melora:soundStatus", "position", {
-                    position = coords
-                })
+                -- Eigenen Sound direkt client-seitig updaten (kein Server-Roundtrip)
+                if xSound:soundExists(myMusicId) then
+                    xSound:Position(myMusicId, coords)
+                end
+                -- Server nur für Sync mit anderen Spielern informieren
+                -- Bei sehr hoher Geschwindigkeit (Tier 3/4) trotzdem reduzieren
+                if selectedTier < 3 or (currentTime % 3 == 0) then
+                    TriggerServerEvent("phone:melora:soundStatus", "position", {
+                        position = coords
+                    })
+                end
                 lastPosition = coords
             end
 
@@ -288,6 +288,14 @@ end)
 -- Receive sound events from server
 RegisterNetEvent("phone:melora:soundStatus", function(type, musicId, data)
     if type == "position" and data.position then
+        -- Eigenen Sound nie durch Distanz-Check zerstören (wir bewegen uns mit)
+        if musicId == myMusicId then
+            if xSound:soundExists(musicId) then
+                xSound:Position(musicId, data.position)
+            end
+            return
+        end
+
         local myPed = PlayerPedId()
         local myCoords = GetEntityCoords(myPed)
         local distance = #(myCoords - vector3(data.position.x, data.position.y, data.position.z))
@@ -510,12 +518,36 @@ CreateThread(function()
     end
 end)
 
+-- ─── YouTube API Callbacks ────────────────────────────────────────────────────
+-- Alle HTTP-Calls laufen server-seitig. Key verlässt nie den Client.
+
+RegisterNUICallback('ytSearch', function(data, cb)
+    local results = lib.callback.await('melora_musicapp:server:ytSearch', false, data.query)
+    cb(results or { error = 'NO_RESULT' })
+end)
+
+RegisterNUICallback('ytImportPlaylist', function(data, cb)
+    -- Server importiert direkt in DB und gibt aktualisierte Playlist zurück
+    local result = lib.callback.await('melora_musicapp:server:ytImportPlaylist', false, data.url)
+    if result and result.ok and result.playlist then
+        playlist = result.playlist
+        cb({ ok = true, count = result.count, playlist = playlist })
+    else
+        cb({ ok = false, error = result and result.error or 'Fehler' })
+    end
+end)
+
+RegisterNUICallback('ytGetVideoInfo', function(data, cb)
+    local info = lib.callback.await('melora_musicapp:server:ytGetVideoInfo', false, data.url)
+    cb(info or {})
+end)
+
+-- ─── Phone-Item Check + Resource Stop ────────────────────────────────────────
 
 CreateThread(function()
     while true do
-        Wait(2000)
-
         if not playing then
+            Wait(5000)
             goto continue
         end
 
@@ -525,31 +557,24 @@ CreateThread(function()
             playing = false
             isPaused = false
             currentPlaylistIndex = 0
-
             TriggerServerEvent("phone:melora:soundStatus", "stop", {})
-
             Core.SendNuiMessage("forceStop", {})
         end
 
+        Wait(2000)
         ::continue::
     end
 end)
 
-
 AddEventHandler('onResourceStop', function(resourceName)
-    if resourceName ~= GetCurrentResourceName() then
-        return
-    end
+    if resourceName ~= GetCurrentResourceName() then return end
 
     if playing then
         TriggerServerEvent("phone:melora:soundStatus", "stop", {})
-
         if xSound:soundExists(myMusicId) then
             xSound:Destroy(myMusicId)
         end
-
         Core.SendNuiMessage("forceStop", {})
-
         playing = false
         isPaused = false
         currentPlaylistIndex = 0

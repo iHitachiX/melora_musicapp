@@ -1,14 +1,14 @@
 Locales['en'] = {
     -- App metadata
     app_label = "Melora",
-    app_description = "Play your favorite music from YouTube",
+    app_description = "Play your favorite music from YouPlay",
 
     -- Player view
     no_song_playing = "No song playing",
     now_playing = "Now playing",
     paused = "Paused",
     enter_url_to_start = "Enter a URL to start",
-    youtube_url = "YouTube URL",
+    youtube_url = "YouPlay URL",
     url_placeholder = "https://youtube.com/watch?v=...",
     playing_dotdotdot = "Playing...",
     play = "Play",
@@ -30,15 +30,16 @@ Locales['en'] = {
 
     -- Add modal
     add_song_title = "Add Song",
-    paste_youtube_url = "Paste YouTube URL...",
+    paste_youplay_url = "Paste YouPlay URL...",
     cancel = "Cancel",
     add = "Add",
 
     -- Toasts / Messages
-    invalid_youtube_url = "Please enter a valid YouTube URL",
-    enter_valid_url_first = "Please enter a valid YouTube URL first",
+    invalid_youplay_url = "Please enter a valid YouPlay URL",
+    enter_valid_url_first = "Please enter a valid YouPlay URL first",
     song_added_to_playlist = "Song added to playlist!",
     song_removed = "Song removed",
     error_adding = "Error adding song",
+    playlistEnded = "Playlist ended",
     unknown_title = "Unknown Title",
 }
